@@ -1,0 +1,27 @@
+from pathlib import Path
+
+APP_TITLE = "Petto"
+APP_SUBTITLE = "Seguimiento Post-Adopción"
+
+DATABASE_DIR = Path("/tmp")
+DATABASE_NAME = "petto.db"
+DATABASE_PATH = DATABASE_DIR / DATABASE_NAME
+
+WELLBEING_MIN = 1
+WELLBEING_MAX = 5
+RISK_THRESHOLD = 2
+
+ADOPTION_STAGES = [
+    "Primeros 7 días",
+    "Seguimiento 30 días",
+    "Seguimiento 90 días"
+]
+
+BEHAVIOR_OPTIONS = [
+    "Adaptación positiva",
+    "Ansiedad",
+    "Miedo",
+    "Destrucción de objetos",
+    "Problemas de convivencia",
+    "Otro"
+]
