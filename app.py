@@ -259,7 +259,7 @@ if page == "Check-in":
 # =========================
 if page == "Alertas":
 
-    st.subheader("⚠️ Casos con riesgo")
+    st.subheader("Casos con riesgo")
 
     alerts = c.execute('''
     SELECT
@@ -291,7 +291,7 @@ if page == "Alertas":
 # =========================
 if page == "Biblioteca":
 
-    st.subheader("📚 Biblioteca de comportamiento")
+    st.subheader("Biblioteca de comportamiento")
 
     with st.container(border=True):
         st.markdown("### Ansiedad")
@@ -348,24 +348,24 @@ python-3.11
 
 # Qué hace este MVP
 
-✅ Registro de adopciones
-✅ Seguimiento post-adopción
-✅ Alertas tempranas
-✅ Historial de bienestar
-✅ Biblioteca básica de apoyo
-✅ Persistencia local con SQLite
-✅ Compatible con Streamlit Free Tier
+Registro de adopciones
+Seguimiento post-adopción
+Alertas tempranas
+Historial de bienestar
+Biblioteca básica de apoyo
+Persistencia local con SQLite
+Compatible con Streamlit Free Tier
 
 ---
 
 # Qué NO hace todavía
 
-❌ Login
-❌ WhatsApp
-❌ Emails automáticos
-❌ IA
-❌ Multi-protectora
-❌ Subida de archivos
-❌ Dashboard avanzado
+Login
+WhatsApp
+Emails automáticos
+IA
+Multi-protectora
+Subida de archivos
+Dashboard avanzado
 
 Eso viene después. El foco aquí es validar seguimiento y reducción de devoluciones.
