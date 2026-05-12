@@ -1,0 +1,10 @@
+from config import RISK_THRESHOLD
+
+def is_risk_case(wellbeing_score):
+    """
+    Evalúa riesgo.
+
+    Returns:
+        bool
+    """
+    return wellbeing_score <= RISK_THRESHOLD
