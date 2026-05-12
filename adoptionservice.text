@@ -1,0 +1,17 @@
+def validate_adoption_input(
+    familia,
+    mascota
+):
+    """
+    Valida formulario.
+
+    Returns:
+        tuple(bool, str)
+    """
+    if not familia.strip():
+        return False, "La familia es obligatoria."
+
+    if not mascota.strip():
+        return False, "La mascota es obligatoria."
+
+    return True, ""
