@@ -1,0 +1,63 @@
+from data.database import get_connection
+
+def create_adoption(
+    familia,
+    mascota,
+    fecha,
+    estado
+):
+    """
+    Guarda adopción.
+
+    Returns:
+        None
+    """
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+        INSERT INTO adopciones (
+            familia,
+            mascota,
+            fecha,
+            estado
+        )
+        VALUES (?, ?, ?, ?)
+        """, (
+            familia,
+            mascota,
+            fecha,
+            estado
+        ))
+
+        connection.commit()
+
+    except Exception as error:
+        raise RuntimeError(
+            f"Error guardando adopción: {error}"
+        )
+
+def get_all_adoptions():
+    """
+    Retorna adopciones.
+
+    Returns:
+        list
+    """
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        rows = cursor.execute("""
+        SELECT id, familia, mascota, fecha, estado
+        FROM adopciones
+        ORDER BY id DESC
+        """).fetchall()
+
+        return rows
+
+    except Exception as error:
+        raise RuntimeError(
+            f"Error leyendo adopciones: {error}"
+        )
