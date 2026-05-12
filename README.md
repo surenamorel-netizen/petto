@@ -1,2 +1,2 @@
 # petto
-Petto platafor,a
+Petto plataforma
