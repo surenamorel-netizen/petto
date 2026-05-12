@@ -1,50 +1,53 @@
 import streamlit as st
-import sqlite3
+from supabase import create_client
 from datetime import datetime
 
-from config import (
-    APP_TITLE,
-    APP_SUBTITLE,
-    ADOPTION_STAGES,
-    BEHAVIOR_OPTIONS,
-    WELLBEING_MIN,
-    WELLBEING_MAX
-)
+# =========================
+# CONFIG
+# =========================
+
+APP_TITLE = "Petto"
+APP_SUBTITLE = "Seguimiento Post-Adopción"
+
+ADOPTION_STAGES = [
+    "Primeros 7 días",
+    "Seguimiento 30 días",
+    "Seguimiento 90 días"
+]
+
+BEHAVIOR_OPTIONS = [
+    "Adaptación positiva",
+    "Ansiedad",
+    "Miedo",
+    "Destrucción de objetos",
+    "Problemas de convivencia",
+    "Otro"
+]
+
+# =========================
+# PAGE
+# =========================
 
 st.set_page_config(
     page_title=APP_TITLE,
     layout="wide"
 )
 
-conn = sqlite3.connect(
-    "/tmp/petto.db",
-    check_same_thread=False
+# =========================
+# SUPABASE
+# =========================
+
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
 )
 
-c = conn.cursor()
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS adopciones (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    familia TEXT,
-    mascota TEXT,
-    fecha TEXT,
-    estado TEXT
-)
-""")
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS checkins (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    adopcion_id INTEGER,
-    fecha TEXT,
-    bienestar INTEGER,
-    comportamiento TEXT,
-    notas TEXT
-)
-""")
-
-conn.commit()
+# =========================
+# SIDEBAR
+# =========================
 
 st.sidebar.title("🐾 Petto")
 
@@ -53,11 +56,13 @@ page = st.sidebar.radio(
     [
         "Dashboard",
         "Nueva adopción",
-        "Check-in",
-        "Alertas",
-        "Biblioteca"
+        "Check-in"
     ]
 )
+
+# =========================
+# HEADER
+# =========================
 
 st.title(APP_TITLE)
 st.caption(APP_SUBTITLE)
@@ -68,13 +73,15 @@ st.caption(APP_SUBTITLE)
 
 if page == "Dashboard":
 
-    st.subheader("Adopciones registradas")
+    st.subheader(
+        "Adopciones registradas"
+    )
 
-    rows = c.execute("""
-        SELECT familia, mascota, fecha, estado
-        FROM adopciones
-        ORDER BY id DESC
-    """).fetchall()
+    response = supabase.table(
+        "adopciones"
+    ).select("*").execute()
+
+    rows = response.data
 
     if rows:
 
@@ -82,13 +89,27 @@ if page == "Dashboard":
 
             with st.container(border=True):
 
-                st.write(f"**Familia:** {row[0]}")
-                st.write(f"**Mascota:** {row[1]}")
-                st.write(f"**Fecha:** {row[2]}")
-                st.write(f"**Estado:** {row[3]}")
+                st.write(
+                    f"**Familia:** {row['familia']}"
+                )
+
+                st.write(
+                    f"**Mascota:** {row['mascota']}"
+                )
+
+                st.write(
+                    f"**Fecha:** {row['fecha']}"
+                )
+
+                st.write(
+                    f"**Estado:** {row['estado']}"
+                )
 
     else:
-        st.info("Todavía no hay adopciones registradas.")
+
+        st.info(
+            "Todavía no hay adopciones."
+        )
 
 # =========================
 # NUEVA ADOPCIÓN
@@ -96,20 +117,22 @@ if page == "Dashboard":
 
 if page == "Nueva adopción":
 
-    st.subheader("Registrar nueva adopción")
+    st.subheader(
+        "Registrar adopción"
+    )
 
-    with st.form("adopcion_form"):
+    with st.form("adoption_form"):
 
         familia = st.text_input(
-            "Nombre de la familia"
+            "Familia"
         )
 
         mascota = st.text_input(
-            "Nombre de la mascota"
+            "Mascota"
         )
 
         fecha = st.date_input(
-            "Fecha de adopción"
+            "Fecha"
         )
 
         estado = st.selectbox(
@@ -123,25 +146,17 @@ if page == "Nueva adopción":
 
         if submitted:
 
-            c.execute("""
-                INSERT INTO adopciones (
-                    familia,
-                    mascota,
-                    fecha,
-                    estado
-                )
-                VALUES (?, ?, ?, ?)
-            """, (
-                familia,
-                mascota,
-                str(fecha),
-                estado
-            ))
-
-            conn.commit()
+            supabase.table(
+                "adopciones"
+            ).insert({
+                "familia": familia,
+                "mascota": mascota,
+                "fecha": str(fecha),
+                "estado": estado
+            }).execute()
 
             st.success(
-                "Adopción registrada correctamente"
+                "Adopción guardada"
             )
 
 # =========================
@@ -150,50 +165,53 @@ if page == "Nueva adopción":
 
 if page == "Check-in":
 
-    st.subheader("Registrar seguimiento")
+    st.subheader(
+        "Registrar seguimiento"
+    )
 
-    adopciones = c.execute("""
-        SELECT id, familia, mascota
-        FROM adopciones
-        ORDER BY id DESC
-    """).fetchall()
+    response = supabase.table(
+        "adopciones"
+    ).select("*").execute()
 
-    if not adopciones:
+    rows = response.data
+
+    if not rows:
 
         st.warning(
-            "Primero debes crear una adopción"
+            "Primero crea una adopción"
         )
 
     else:
 
         options = {
-            f"{a[1]} · {a[2]}": a[0]
-            for a in adopciones
+            f"{r['familia']} · {r['mascota']}":
+            r["id"]
+            for r in rows
         }
 
         selected = st.selectbox(
-            "Selecciona una adopción",
+            "Selecciona adopción",
             list(options.keys())
         )
 
-        adopcion_id = options[selected]
+        adoption_id = options[selected]
 
         with st.form("checkin_form"):
 
             bienestar = st.slider(
-                "Nivel de bienestar",
-                WELLBEING_MIN,
-                WELLBEING_MAX,
+                "Bienestar",
+                1,
+                5,
                 3
             )
 
             comportamiento = st.selectbox(
-                "Comportamiento observado",
+                "Comportamiento",
                 BEHAVIOR_OPTIONS
             )
 
             notas = st.text_area(
-                "Notas del seguimiento"
+                "Notas"
             )
 
             submitted = st.form_submit_button(
@@ -202,24 +220,15 @@ if page == "Check-in":
 
             if submitted:
 
-                c.execute("""
-                    INSERT INTO checkins (
-                        adopcion_id,
-                        fecha,
-                        bienestar,
-                        comportamiento,
-                        notas
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    adopcion_id,
-                    str(datetime.now()),
-                    bienestar,
-                    comportamiento,
-                    notas
-                ))
-
-                conn.commit()
+                supabase.table(
+                    "checkins"
+                ).insert({
+                    "adopcion_id": adoption_id,
+                    "fecha": str(datetime.now()),
+                    "bienestar": bienestar,
+                    "comportamiento": comportamiento,
+                    "notas": notas
+                }).execute()
 
                 st.success(
                     "Check-in guardado"
@@ -229,104 +238,39 @@ if page == "Check-in":
 
         st.subheader("Historial")
 
-        history = c.execute("""
-            SELECT
-                fecha,
-                bienestar,
-                comportamiento,
-                notas
-            FROM checkins
-            WHERE adopcion_id = ?
-            ORDER BY id DESC
-        """, (adopcion_id,)).fetchall()
+        history_response = supabase.table(
+            "checkins"
+        ).select("*").eq(
+            "adopcion_id",
+            adoption_id
+        ).execute()
+
+        history = history_response.data
 
         if history:
 
-            for h in history:
+            for item in history:
 
                 with st.container(border=True):
 
-                    st.write(f"**Fecha:** {h[0]}")
-                    st.write(f"**Bienestar:** {h[1]}/5")
-                    st.write(f"**Comportamiento:** {h[2]}")
-                    st.write(f"**Notas:** {h[3]}")
+                    st.write(
+                        f"**Fecha:** {item['fecha']}"
+                    )
+
+                    st.write(
+                        f"**Bienestar:** {item['bienestar']}/5"
+                    )
+
+                    st.write(
+                        f"**Comportamiento:** {item['comportamiento']}"
+                    )
+
+                    st.write(
+                        f"**Notas:** {item['notas']}"
+                    )
 
         else:
 
             st.info(
                 "Todavía no hay check-ins."
             )
-
-# =========================
-# ALERTAS
-# =========================
-
-if page == "Alertas":
-
-    st.subheader("⚠️ Casos con riesgo")
-
-    alerts = c.execute("""
-        SELECT
-            adopciones.familia,
-            adopciones.mascota,
-            checkins.bienestar,
-            checkins.comportamiento,
-            checkins.notas
-        FROM checkins
-        JOIN adopciones
-        ON adopciones.id = checkins.adopcion_id
-        WHERE checkins.bienestar <= 2
-        ORDER BY checkins.id DESC
-    """).fetchall()
-
-    if alerts:
-
-        for a in alerts:
-
-            with st.container(border=True):
-
-                st.error(
-                    f"{a[1]} requiere atención"
-                )
-
-                st.write(f"**Familia:** {a[0]}")
-                st.write(f"**Bienestar:** {a[2]}/5")
-                st.write(f"**Problema:** {a[3]}")
-                st.write(f"**Notas:** {a[4]}")
-
-    else:
-
-        st.success(
-            "No hay alertas activas"
-        )
-
-# =========================
-# BIBLIOTECA
-# =========================
-
-if page == "Biblioteca":
-
-    st.subheader(
-        "Biblioteca de comportamiento"
-    )
-
-    library = {
-        "Ansiedad":
-        "Mantener rutinas y paseos.",
-
-        "Miedo":
-        "Evitar sobreestimulación.",
-
-        "Destrucción":
-        "Aumentar enriquecimiento.",
-
-        "Convivencia":
-        "Introducciones graduales."
-    }
-
-    for title, text in library.items():
-
-        with st.container(border=True):
-
-            st.markdown(f"### {title}")
-            st.write(text)
