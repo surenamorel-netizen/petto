@@ -268,4 +268,3 @@ if page == "Check-in":
             st.info(
                 "Todavía no hay check-ins."
             )
-```
