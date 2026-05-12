@@ -1,57 +1,31 @@
 import streamlit as st
-import sqlite3
+
 from datetime import datetime
 
-# =========================
-# CONFIG
-# =========================
+from config import (
+    APP_TITLE,
+    APP_SUBTITLE,
+    ADOPTION_STAGES,
+    BEHAVIOR_OPTIONS
+)
+
+from data.adoption_repository import (
+    create_adoption,
+    get_adoptions
+)
+
+from data.checkin_repository import (
+    create_checkin,
+    get_checkins
+)
 
 st.set_page_config(
-    page_title="Petto",
+    page_title=APP_TITLE,
     layout="wide"
 )
 
-# =========================
-# DATABASE
-# =========================
-
-conn = sqlite3.connect(
-    "petto.db",
-    check_same_thread=False
-)
-
-c = conn.cursor()
-
-# Tabla adopciones
-c.execute("""
-CREATE TABLE IF NOT EXISTS adopciones (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    familia TEXT,
-    mascota TEXT,
-    fecha TEXT,
-    estado TEXT
-)
-""")
-
-# Tabla checkins
-c.execute("""
-CREATE TABLE IF NOT EXISTS checkins (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    adopcion_id INTEGER,
-    fecha TEXT,
-    bienestar INTEGER,
-    comportamiento TEXT,
-    notas TEXT
-)
-""")
-
-conn.commit()
-
-# =========================
-# SIDEBAR
-# =========================
-
-st.sidebar.title("🐾 Petto")
+st.title(APP_TITLE)
+st.caption(APP_SUBTITLE)
 
 page = st.sidebar.radio(
     "Navegación",
@@ -63,25 +37,16 @@ page = st.sidebar.radio(
 )
 
 # =========================
-# HEADER
-# =========================
-
-st.title("🐶 Petto")
-st.caption("Seguimiento post-adopción")
-
-# =========================
 # DASHBOARD
 # =========================
 
 if page == "Dashboard":
 
-    st.subheader("Adopciones registradas")
+    st.subheader(
+        "Adopciones registradas"
+    )
 
-    rows = c.execute("""
-        SELECT familia, mascota, fecha, estado
-        FROM adopciones
-        ORDER BY id DESC
-    """).fetchall()
+    rows = get_adoptions()
 
     if rows:
 
@@ -89,13 +54,27 @@ if page == "Dashboard":
 
             with st.container(border=True):
 
-                st.write(f"**Familia:** {row[0]}")
-                st.write(f"**Mascota:** {row[1]}")
-                st.write(f"**Fecha:** {row[2]}")
-                st.write(f"**Estado:** {row[3]}")
+                st.write(
+                    f"**Familia:** {row['familia']}"
+                )
+
+                st.write(
+                    f"**Mascota:** {row['mascota']}"
+                )
+
+                st.write(
+                    f"**Fecha:** {row['fecha']}"
+                )
+
+                st.write(
+                    f"**Estado:** {row['estado']}"
+                )
 
     else:
-        st.info("Todavía no hay adopciones registradas.")
+
+        st.info(
+            "Todavía no hay adopciones."
+        )
 
 # =========================
 # NUEVA ADOPCIÓN
@@ -103,23 +82,27 @@ if page == "Dashboard":
 
 if page == "Nueva adopción":
 
-    st.subheader("Registrar nueva adopción")
+    st.subheader(
+        "Registrar adopción"
+    )
 
-    with st.form("adopcion_form"):
+    with st.form("adoption_form"):
 
-        familia = st.text_input("Nombre de la familia")
+        familia = st.text_input(
+            "Familia"
+        )
 
-        mascota = st.text_input("Nombre de la mascota")
+        mascota = st.text_input(
+            "Mascota"
+        )
 
-        fecha = st.date_input("Fecha de adopción")
+        fecha = st.date_input(
+            "Fecha"
+        )
 
         estado = st.selectbox(
             "Estado",
-            [
-                "Primeros 7 días",
-                "Seguimiento 30 días",
-                "Seguimiento 90 días"
-            ]
+            ADOPTION_STAGES
         )
 
         submitted = st.form_submit_button(
@@ -128,25 +111,15 @@ if page == "Nueva adopción":
 
         if submitted:
 
-            c.execute("""
-                INSERT INTO adopciones (
-                    familia,
-                    mascota,
-                    fecha,
-                    estado
-                )
-                VALUES (?, ?, ?, ?)
-            """, (
+            create_adoption(
                 familia,
                 mascota,
                 str(fecha),
                 estado
-            ))
-
-            conn.commit()
+            )
 
             st.success(
-                "Adopción registrada correctamente"
+                "Adopción guardada"
             )
 
 # =========================
@@ -155,57 +128,49 @@ if page == "Nueva adopción":
 
 if page == "Check-in":
 
-    st.subheader("Registrar seguimiento")
+    st.subheader(
+        "Registrar seguimiento"
+    )
 
-    adopciones = c.execute("""
-        SELECT id, familia, mascota
-        FROM adopciones
-        ORDER BY id DESC
-    """).fetchall()
+    rows = get_adoptions()
 
-    if not adopciones:
+    if not rows:
 
         st.warning(
-            "Primero debes crear una adopción"
+            "Primero crea una adopción"
         )
 
     else:
 
         options = {
-            f"{a[1]} · {a[2]}": a[0]
-            for a in adopciones
+            f"{r['familia']} · {r['mascota']}":
+            r["id"]
+            for r in rows
         }
 
         selected = st.selectbox(
-            "Selecciona una adopción",
+            "Selecciona adopción",
             list(options.keys())
         )
 
-        adopcion_id = options[selected]
+        adoption_id = options[selected]
 
         with st.form("checkin_form"):
 
             bienestar = st.slider(
-                "Nivel de bienestar",
+                "Bienestar",
                 1,
                 5,
                 3
             )
 
             comportamiento = st.selectbox(
-                "Comportamiento observado",
-                [
-                    "Adaptación positiva",
-                    "Ansiedad",
-                    "Miedo",
-                    "Destrucción de objetos",
-                    "Problemas de convivencia",
-                    "Otro"
-                ]
+                "Comportamiento",
+                BEHAVIOR_OPTIONS
             )
 
             notas = st.text_area(
-                "Notas del seguimiento"
+                "Notas"
             )
 
             submitted = st.form_submit_button(
@@ -214,24 +179,13 @@ if page == "Check-in":
 
             if submitted:
 
-                c.execute("""
-                    INSERT INTO checkins (
-                        adopcion_id,
-                        fecha,
-                        bienestar,
-                        comportamiento,
-                        notas
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    adopcion_id,
+                create_checkin(
+                    adoption_id,
                     str(datetime.now()),
                     bienestar,
                     comportamiento,
                     notas
-                ))
-
-                conn.commit()
+                )
 
                 st.success(
                     "Check-in guardado"
@@ -241,30 +195,28 @@ if page == "Check-in":
 
         st.subheader("Historial")
 
-        history = c.execute("""
-            SELECT
-                fecha,
-                bienestar,
-                comportamiento,
-                notas
-            FROM checkins
-            WHERE adopcion_id = ?
-            ORDER BY id DESC
-        """, (adopcion_id,)).fetchall()
+        history = get_checkins(
+            adoption_id
+        )
 
         if history:
 
-            for h in history:
+            for item in history:
 
                 with st.container(border=True):
 
-                    st.write(f"**Fecha:** {h[0]}")
-                    st.write(f"**Bienestar:** {h[1]}/5")
-                    st.write(f"**Comportamiento:** {h[2]}")
-                    st.write(f"**Notas:** {h[3]}")
+                    st.write(
+                        f"**Fecha:** {item['fecha']}"
+                    )
 
-        else:
+                    st.write(
+                        f"**Bienestar:** {item['bienestar']}/5"
+                    )
 
-            st.info(
-                "Todavía no hay check-ins."
-            )
+                    st.write(
+                        f"**Comportamiento:** {item['comportamiento']}"
+                    )
+
+                    st.write(
+                        f"**Notas:** {item['notas']}"
+                    )
