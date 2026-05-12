@@ -1,0 +1,31 @@
+import streamlit as st
+from data.adoption_repository import get_all_adoptions
+from data.checkin_repository import get_risk_cases
+from config import RISK_THRESHOLD
+
+def render_dashboard():
+    """
+    Renderiza dashboard principal.
+    """
+    adoptions = get_all_adoptions()
+    risks = get_risk_cases(RISK_THRESHOLD)
+
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        "Adopciones activas",
+        len(adoptions)
+    )
+
+    col2.metric(
+        "Alertas de riesgo",
+        len(risks)
+    )
+
+    st.divider()
+
+    for adoption in adoptions:
+        with st.container(border=True):
+            st.write(f"**Familia:** {adoption[1]}")
+            st.write(f"**Mascota:** {adoption[2]}")
+            st.write(f"**Estado:** {adoption[4]}")
