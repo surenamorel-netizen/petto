@@ -1,0 +1,63 @@
+import sqlite3
+from config import DATABASE_PATH
+
+def get_connection():
+    """
+    Crea conexión SQLite.
+
+    Returns:
+        sqlite3.Connection
+
+    Raises:
+        RuntimeError: si la conexión falla.
+    """
+    try:
+        connection = sqlite3.connect(
+            DATABASE_PATH,
+            check_same_thread=False
+        )
+        return connection
+    except sqlite3.Error as error:
+        raise RuntimeError(
+            f"Error conectando SQLite: {error}"
+        )
+
+def initialize_database():
+    """
+    Inicializa tablas base.
+
+    Raises:
+        RuntimeError: si la creación falla.
+    """
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS adopciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            familia TEXT NOT NULL,
+            mascota TEXT NOT NULL,
+            fecha TEXT NOT NULL,
+            estado TEXT NOT NULL
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS checkins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            adopcion_id INTEGER NOT NULL,
+            fecha TEXT NOT NULL,
+            bienestar INTEGER NOT NULL,
+            comportamiento TEXT NOT NULL,
+            notas TEXT,
+            FOREIGN KEY(adopcion_id) REFERENCES adopciones(id)
+        )
+        """)
+
+        connection.commit()
+
+    except sqlite3.Error as error:
+        raise RuntimeError(
+            f"Error creando tablas: {error}"
+        )
