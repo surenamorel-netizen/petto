@@ -1,0 +1,47 @@
+import streamlit as st
+
+from config import ADOPTION_STAGES
+from logic.adoption_service import validate_adoption_input
+from data.adoption_repository import create_adoption
+
+def render_new_adoption():
+    """
+    Renderiza formulario adopción.
+    """
+    with st.form("new_adoption"):
+
+        familia = st.text_input("Familia")
+        mascota = st.text_input("Mascota")
+        fecha = st.date_input("Fecha")
+        estado = st.selectbox(
+            "Estado",
+            ADOPTION_STAGES
+        )
+
+        submitted = st.form_submit_button(
+            "Guardar"
+        )
+
+        if submitted:
+
+            is_valid, error = (
+                validate_adoption_input(
+                    familia,
+                    mascota
+                )
+            )
+
+            if not is_valid:
+                st.error(error)
+                return
+
+            create_adoption(
+                familia,
+                mascota,
+                str(fecha),
+                estado
+            )
+
+            st.success(
+                "Adopción registrada."
+            )
