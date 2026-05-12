@@ -1,0 +1,50 @@
+/app.py
+  Router principal y navegación global. Mantiene entrypoint limpio y determinista.
+
+/config.py
+  Fuente única de constantes, paths y estados del sistema.
+
+/ui/dashboard.py
+  Renderiza métricas y resumen visual de adopciones.
+
+/ui/new_adoption.py
+  Formulario UI para registrar adopciones.
+
+/ui/checkin.py
+  UI de seguimiento y visualización histórica.
+
+/ui/alerts.py
+  UI de alertas de riesgo y casos críticos.
+
+/ui/library.py
+  UI estática de apoyo conductual.
+
+/ui/_brand.py
+  Inyección CSS y branding global Streamlit.
+
+/logic/adoption_service.py
+  Reglas puras de validación y formateo de adopciones.
+
+/logic/checkin_service.py
+  Reglas puras para scoring y evaluación de riesgo.
+
+/data/database.py
+  Inicialización SQLite y conexión resiliente.
+
+/data/adoption_repository.py
+  CRUD de adopciones únicamente.
+
+/data/checkin_repository.py
+  CRUD de check-ins únicamente.
+
+/external/logger.py
+  Logging reproducible y manejo de errores.
+
+/.streamlit/config.toml
+  Theme base Streamlit.
+
+/requirements.txt
+  Dependencias pineadas exactas.
+
+/runtime.txt
+  Runtime obligatorio para Streamlit Cloud.
